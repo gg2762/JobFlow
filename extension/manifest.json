@@ -6,7 +6,7 @@
   "permissions": ["activeTab", "scripting"],
   "host_permissions": ["http://localhost:3737/*"],
   "action": {
-    "default_title": "Save Job",
+    "default_title": "Queue Job",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icon.png",

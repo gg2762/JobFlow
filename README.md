@@ -29,7 +29,7 @@ All data lives on your disk. The server binds to `127.0.0.1` only. Nothing leave
 ```
 ┌──────────────────┐  POST  ┌────────────────────┐  append  ┌───────────────────┐
 │ Chrome extension │ ─────▶ │ Local Node server  │ ───────▶ │ user_data/        │
-│   "Save Job"     │ :3737  │ (LaunchAgent)      │          │   queue.csv       │
+│   "Queue Job"    │ :3737  │ (LaunchAgent)      │          │   queue.csv       │
 └──────────────────┘        └────────────────────┘          └───────────────────┘
                                        │                              │
                                        ▼                              ▼
@@ -160,11 +160,11 @@ The server auto-starts at login, auto-restarts on crash. See [docs/server.md](do
 3. Click **Load unpacked** → select `jobflow/extension/`
 4. Pin the **JOBFLOW Capture** icon to your toolbar
 
-Done. Click any job posting → click the extension icon → click **Save Job**.
+Done. Click any job posting → click the extension icon → click **Queue Job**.
 
 ### 5. Use it
 
-- Browse to a JD page (LinkedIn, Greenhouse, Lever, Ashby, etc.) → JOBFLOW icon → **Save Job**.
+- Browse to a JD page (LinkedIn, Greenhouse, Lever, Ashby, etc.) → JOBFLOW icon → **Queue Job**.
 - Open the dashboard at `http://localhost:3737/` to see captured rows.
 - In Claude Code, `cd ~/jobflow` and run `/process-queue`. Claude picks blueprints, generates resumes, runs QA, drops `.docx` + `.pdf` in your output folder.
 - Got application questions on a row? Expand the row in the dashboard, paste them in, click **Save questions**, then run `/answer-questions` in Claude Code.
