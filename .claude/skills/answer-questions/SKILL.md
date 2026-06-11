@@ -94,7 +94,7 @@ Read from the row: `page_title`, `jd_text`, `blueprint`. Tailor the template usi
 - **Company + role name** extracted from `page_title` or `jd_text` first lines
 - **Blueprint archetype** for voice + which proof points to lead with (see "Trajectory framing" in answer_bank)
 - **JD vocabulary mirroring** — if the JD says "data models, schemas, API design", echo those exact terms
-- **Tier calibration** — if the role title is Sr PM, use Sr-PM-tier voice (don't lean Director); if Lead/Director, lean strategy-led
+- **Tier calibration** — match the voice to the role's seniority. If the user's `skill_overrides.md` defines tier-specific voice rules (e.g., "Sr PM tier is safety-net; don't lean Director-tier framing"), honor them.
 
 #### 4.4 — Length calibration
 
@@ -109,10 +109,10 @@ Read from the row: `page_title`, `jd_text`, `blueprint`. Tailor the template usi
 - ❌ Never quote previous comp from the "Recent comp anchors" subsection — it's internal reference only.
 - ❌ Never invent a notice period, availability date, or relocation preference. If `answer_bank.md` has `[TBD]`, return `"[need to know: notice period — please update answer_bank.md]"` so the user fills it in.
 - ❌ Never bad-mouth previous employers or current role.
-- ❌ Never write "Remote (Paris, France)" — location is always just "Paris, France" (recurring user correction).
+- ❌ Never violate the formatting rules in `./user_data/skill_overrides.md` (e.g., the user may have a canonical location format like "City, Country" with no "Remote (...)" prefix).
 - ❌ Never use vague filler ("passionate about", "results-driven", "dynamic", etc.) — same banned phrases as resume-builder.
-- ❌ Never quote LegendCraft traction metrics that don't exist in canon.
-- ❌ Never push Director-tier voice on a Sr-PM-titled role.
+- ❌ Never quote traction metrics for a project or role that don't exist in the user's `answer_bank.md` or in any blueprint in `./user_data/blueprints/`.
+- ❌ Never push a title-tier voice that mismatches the role being applied to. If the JD is a Sr PM role and the user's overrides specify "Sr PM is safety-net tier — stay in lane, don't lean Director", honor that.
 
 ### Step 5 — Write answers back
 
