@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  JOBFLOW LaunchAgent template.
+
+  Personalize with:
+    sed -e "s|{{JOBFLOW_HOME}}|$HOME/jobflow|g" \
+        -e "s|{{NODE_BIN}}|$(which node)|g" \
+        launchd/com.jobflow.server.plist.template \
+        > ~/Library/LaunchAgents/com.jobflow.server.plist
+
+  Then load it:
+    launchctl load ~/Library/LaunchAgents/com.jobflow.server.plist
+
+  To uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.jobflow.server.plist
+    rm ~/Library/LaunchAgents/com.jobflow.server.plist
+
+  Common node paths (use `which node` to confirm yours):
+    Intel Homebrew: /usr/local/bin/node
+    Apple Silicon Homebrew: /opt/homebrew/bin/node
+    nvm: $HOME/.nvm/versions/node/<version>/bin/node
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jobflow.server</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{NODE_BIN}}</string>
+    <string>{{JOBFLOW_HOME}}/server.js</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>{{JOBFLOW_HOME}}</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>{{JOBFLOW_HOME}}/server.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>{{JOBFLOW_HOME}}/server.err.log</string>
+
+  <!-- Optional: set environment variables here, or leave the server to use defaults. -->
+  <!--
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>JOBFLOW_PORT</key>
+    <string>3737</string>
+    <key>JOBFLOW_OUTPUT_DIR</key>
+    <string>/Users/yourname/Desktop/Jobs/Resume</string>
+  </dict>
+  -->
+</dict>
+</plist>

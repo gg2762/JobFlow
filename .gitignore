@@ -1,0 +1,56 @@
+# JOBFLOW .gitignore
+# Personal data and runtime state MUST NOT be committed.
+
+# ===== User data (gitignored entirely) =====
+# Personal blueprints, answer bank, captured JDs.
+user_data/
+!user_data/README.md
+
+# ===== Runtime state =====
+queue.csv
+*.log
+server.log
+server.err.log
+.cron.log
+
+# ===== Personal LaunchAgent plists =====
+# The TEMPLATE in launchd/ is committed; only personalized installs (with usernames in the label) are ignored.
+com.gregorio.*
+*.plist
+!launchd/*.template
+
+# ===== Transient build artifacts =====
+resume_manifest.js
+build_samples.js
+
+# ===== Output (resumes generated for the user) =====
+output/
+*.docx
+*.pdf
+# But DO commit assets like the logo
+!assets/*.png
+!assets/*.svg
+!assets/*.jpg
+!assets/*.webp
+# And the GG_Resume_sample.docx is already deleted from the repo
+
+# ===== System cruft =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ===== Node =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# ===== Environment files =====
+.env
+.env.local
+.env.*.local
+!.env.example
