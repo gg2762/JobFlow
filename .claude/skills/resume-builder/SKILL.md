@@ -259,13 +259,16 @@ tabStops: [{ type: TabStopType.RIGHT, position: 10440 }]
 
 ### Header block
 
-Read the user's actual name + contact line from the chosen blueprint's first two lines (the `# NAME` header and the `email | linkedin | location` line below it). Render:
+Read the user's actual name + contact line from the chosen blueprint's first two lines (the `# NAME` header and the `email | linkedin | github | location` line below it — `github` is optional, blueprints may have 3 or 4 pipe-separated segments). Render:
 
 ```
 Line 1: [Name from blueprint] [bold, size 44 = 22pt]  →tab→  [email from blueprint] [size 18 = 9pt]
 Line 2: "" →tab→  [linkedin handle from blueprint] [size 18 = 9pt]
-Line 3: "" →tab→  [location from blueprint] [size 18 = 9pt]  + bottom border
+Line 3 (if github present): "" →tab→  [github handle from blueprint] [size 18 = 9pt]
+Line N (last): "" →tab→  [location from blueprint] [size 18 = 9pt]  + bottom border
 ```
+
+Split the contact line on `|` and trim each segment. The location is always the **last** segment; everything between linkedin and location is rendered as its own right-aligned line in order. Apply the bottom border only to the final (location) line.
 
 If `skill_overrides.md` specifies "Add 'open to relocation' on line 3 when the role is outside [home country]", honor that.
 
