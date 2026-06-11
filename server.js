@@ -155,6 +155,25 @@ async function handleRowUpdate(req, res, id) {
   return send(res, 200, { ok: true, id, row: rows[idx] });
 }
 
+// Delete a row. For now, restricted to status='Queued' — protects rows with
+// generated artifacts (PDF/DOCX) or recorded outcomes from accidental loss.
+function handleRowDelete(req, res, id) {
+  ensureQueue();
+  const rows = parseCsv(fs.readFileSync(QUEUE_PATH, 'utf8'));
+  const idx = rows.findIndex(r => r.id === id);
+  if (idx === -1) return send(res, 404, { error: 'row not found', id });
+  if (rows[idx].status !== 'Queued') {
+    return send(res, 409, { error: 'only Queued rows can be deleted', id, status: rows[idx].status });
+  }
+  rows.splice(idx, 1);
+  const body = HEADERS.join(',') + '\n' + rows.map(rowToCsv).join('');
+  const tmp = QUEUE_PATH + '.tmp';
+  fs.writeFileSync(tmp, body);
+  fs.renameSync(tmp, QUEUE_PATH);
+  console.log(`[delete] ${id}`);
+  return send(res, 200, { ok: true, id });
+}
+
 // ----- dashboard -----
 const DASHBOARD_HTML = `<!doctype html>
 <html lang="en">
@@ -310,6 +329,10 @@ const DASHBOARD_HTML = `<!doctype html>
   /* PDF link */
   td .pdf-link { font-family: var(--mono); font-size: 12px; }
 
+  /* delete button (Queued rows only) */
+  .del-btn { background: transparent; border: 1px solid var(--border); color: var(--text-faint); width: 22px; height: 22px; border-radius: 4px; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; transition: background 0.1s, color 0.1s, border-color 0.1s; }
+  .del-btn:hover { background: rgba(248, 113, 113, 0.15); color: var(--danger); border-color: var(--danger); }
+
   /* empty state */
   .empty { color: var(--text-faint); text-align: center; padding: 60px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; font-style: italic; }
 
@@ -413,6 +436,7 @@ const COLS = [
   { key: 'pdf_path',     label: 'PDF',       type: 'pdf' },
   { key: '_submit',      label: 'Submitted', type: 'submit', sortKey: 'applied_at' },
   { key: '_outcome',     label: 'Outcome',   type: 'outcome', sortKey: 'status' },
+  { key: '_delete',      label: '',          type: 'delete' },
 ];
 
 // Status color tokens, kept in sync with CSS.
@@ -556,6 +580,9 @@ function renderCell(col, r) {
     case 'pdf':       return r.pdf_path ? '<a class="pdf-link" href="file://' + encodeURI(r.pdf_path) + '">open</a>' : '<span class="muted">—</span>';
     case 'submit':    return submitCell(r);
     case 'outcome':   return outcomeCell(r);
+    case 'delete':    return r.status === 'Queued'
+      ? '<button class="del-btn" data-action="delete" data-id="' + r.id + '" title="Remove from queue">×</button>'
+      : '';
   }
 }
 
@@ -674,6 +701,13 @@ document.addEventListener('click', async (e) => {
     const newStatus = v === 'Pending' ? 'Submitted' : v;
     await updateRow(t.dataset.id, { status: newStatus }); return;
   }
+  if (t.dataset.action === 'delete') {
+    e.stopPropagation();
+    t.disabled = true;
+    await fetch('/row/' + t.dataset.id + '/delete', { method: 'POST' });
+    await load();
+    return;
+  }
   if (t.dataset.action === 'add-q') { addQuestionRow(t.dataset.row); return; }
   if (t.dataset.action === 'save-q') { await saveQuestions(t.dataset.row); return; }
   if (t.dataset.action === 'remove-q') { t.closest('.qitem').remove(); return; }
@@ -755,6 +789,9 @@ const server = http.createServer(async (req, res) => {
   // POST /row/<id>/update — update specific columns for a row (used by /process-queue skill).
   const rowMatch = parsed.pathname.match(/^\/row\/([^/]+)\/update$/);
   if (req.method === 'POST' && rowMatch) return handleRowUpdate(req, res, rowMatch[1]);
+  // POST /row/<id>/delete — remove a Queued row from the CSV.
+  const delMatch = parsed.pathname.match(/^\/row\/([^/]+)\/delete$/);
+  if (req.method === 'POST' && delMatch) return handleRowDelete(req, res, delMatch[1]);
   // GET /assets/<file> — serve static files from <project root>/assets/.
   const assetMatch = parsed.pathname.match(/^\/assets\/([^/]+)$/);
   if (req.method === 'GET' && assetMatch) {
