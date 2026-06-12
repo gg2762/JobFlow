@@ -1,7 +1,7 @@
 # JOBFLOW
 
-> **The open-core agentic pipeline for job applications.**
-> Capture a job posting from any tab, get a tailored one-page resume + a CSV tracker — all running locally on your machine.
+> **Looking for jobs is fine. Applying to them is the grind.**
+> JOBFLOW is the agentic application stack that takes over the moment you find a role you like.
 
 <p align="center">
   <img src="assets/logo.png" alt="JOBFLOW" width="640"/>
@@ -9,18 +9,66 @@
 
 ---
 
-## What it does
+## The problem
 
-You're on a job posting in your browser. You click the JOBFLOW Chrome extension. A few seconds later, a tailored one-page resume PDF is sitting in your output folder, the application appears in your tracker dashboard, and you're ready to submit.
+Finding jobs you like isn't the bottleneck. Job boards, LinkedIn alerts, network referrals — discovery is fine, sometimes even fun. **What hurts is everything that happens after.**
 
-Under the hood, JOBFLOW orchestrates four pieces:
+JOBFLOW is not a job discovery tool. It's the layer that sits on top of every job posting you've already decided you want to apply to, and solves three specific pains:
 
-1. **Chrome extension** — captures the JD text and URL with one click.
-2. **Local server** — receives captures into a CSV queue, serves a dashboard at `http://localhost:3737/`.
-3. **Sealed blueprints** — five archetype-specific resume templates (AdTech, Data Infra, Strategy/Growth, Regulated SaaS, AI Founder). One blueprint per JD, surgical ATS keyword overrides only — never rewritten.
-4. **Claude Code skills** — `/process-queue` picks the right blueprint, generates the `.docx` + `.pdf` with a mandatory QA gate (page count = 1, Skills row line-wrap, font/margin checks). `/answer-questions` tailors application-form answers from your `answer_bank.md`.
+### 1. Tailoring resumes and application materials is cumbersome
 
-All data lives on your disk. The server binds to `127.0.0.1` only. Nothing leaves your machine.
+Every role wants slightly different keywords, a tweaked summary, a re-ordered skills section. Doing this by hand across 20 applications is an evening you won't get back. Doing it by pasting your résumé into ChatGPT introduces hallucinations: invented metrics, jobs you didn't have, languages you don't speak.
+
+### 2. Tracking the pipeline is a mess
+
+Where did I send the Acronis application? What did I write for Spotify's "tell us about a time" essay? Which roles am I still waiting on? Which ones rejected me? Spreadsheets rot, browser bookmarks scatter, and the answer to "did I apply to that?" becomes a 10-minute search.
+
+### 3. Generic LLMs hallucinate when you ask them to tailor your CV
+
+The standard workflow — paste résumé + JD into ChatGPT, ask for a tailored version — produces a confident document that quietly invents facts. You catch the obvious ones; the subtle ones make it into PDFs that recruiters and interviewers will hold against you.
+
+---
+
+## What JOBFLOW does
+
+One Chrome-extension click per job posting kicks off an end-to-end pipeline:
+
+- **Captures the JD** from the active tab into a local CSV queue and a dashboard
+- **Picks the right resume archetype** from your sealed blueprints (you maintain 5, one per role family)
+- **Generates a tailored one-page `.docx` + `.pdf`** with surgical ATS keyword swaps gated by an explicit whitelist of terms you've signed off on
+- **Refuses to fabricate** — anything outside your blueprints + whitelist is logged as an unfulfilled gap, never silently injected
+- **Catches application questions** ("Why this role?", "Tell us about a time…") and answers them from a personal `answer_bank.md` that holds your verified facts and stock responses
+- **Tracks every application end-to-end** — Queued → Ready → Submitted → Interview / Rejected — from a local dashboard at `localhost:3737`
+
+The output: more applications shipped per evening, every one of them factually clean, every one of them tracked.
+
+---
+
+## Why this and not generic ChatGPT
+
+| | Generic LLM workflow | JOBFLOW |
+|---|---|---|
+| Fact boundary | None — the model invents | Sealed blueprints + ATS whitelist; fabrication is structurally blocked |
+| Output format | Plain text you reformat in Word | Programmatic `.docx` + `.pdf`, QA-gated (1 page, font, margins, Skills row line-wrap) |
+| Per-application memory | None — every chat starts blank | Persistent CSV + dashboard with full history per role |
+| Application questions | Re-typed every time | Drawn from your `answer_bank.md` canon |
+| Data residency | Your résumé sits on someone else's server | Everything is local; the server binds to `127.0.0.1` |
+| Repeatability | Hand-driven, drifts session to session | Deterministic Claude Code skills with explicit contracts |
+
+JOBFLOW is opinionated where generic tools are loose, and quiet where you don't want a model to improvise.
+
+---
+
+## A typical loop
+
+1. You're on a job posting in your browser. Click the **JOBFLOW Capture** extension.
+2. The JD lands in your queue. The dashboard at `localhost:3737` shows it as `Queued`.
+3. In Claude Code, run `/process-queue`. The skill picks the right blueprint, applies whitelist-checked ATS swaps, renders the `.docx` + `.pdf`, runs the QA gate, marks the row `Ready`.
+4. If the application form had screening questions, paste them into the row's expanded panel and run `/answer-questions`. Answers come back drawn from your `answer_bank.md`.
+5. Submit the application. Tick the row's **Submitted** box.
+6. Outcomes (Interview / Rejected / Pending) update from the dashboard as your funnel progresses.
+
+All data lives on your disk. Nothing leaves your machine.
 
 ---
 
@@ -69,6 +117,8 @@ jobflow/
 ├── blueprints/                 # OPEN-SOURCE: archetype templates + sample
 │   ├── _schema.md              # The canonical blueprint structure
 │   ├── _archetype_*.md         # 5 empty scaffolds with section guidance
+│   ├── _skill_overrides_template.md   # User-specific behavioral rules (template)
+│   ├── _ats_whitelist_template.md     # ATS keyword whitelist (template)
 │   └── sample/                 # Filled-in example so you see what one looks like
 │       └── blueprint_strategy_growth_sample.md
 ├── docs/
@@ -80,6 +130,8 @@ jobflow/
 │   └── logo.png
 ├── user_data/                  # GITIGNORED — your personal data lives here
 │   ├── blueprints/             #   your 5 filled-in blueprints
+│   ├── ats_whitelist.md        #   your ATS keyword catalog (fabrication boundary)
+│   ├── skill_overrides.md      #   your behavioral overrides
 │   ├── answer_bank.md          #   your factual answer canon
 │   └── queue.csv               #   captured JDs + status tracker
 ├── LICENSE                     # AGPL-3.0
@@ -133,9 +185,13 @@ cp blueprints/_archetype_ai_founder.md      user_data/blueprints/blueprint_ai_fo
 
 # Then edit each file to reflect your actual career, archetype by archetype.
 # See blueprints/sample/blueprint_strategy_growth_sample.md for a worked example.
+
+# Copy the ATS whitelist template — this is the file that gates fabrication.
+# Without it the skill falls back to a softer heuristic.
+cp blueprints/_ats_whitelist_template.md user_data/ats_whitelist.md
 ```
 
-Then create your `user_data/answer_bank.md` — same idea, copy the structure from the example in [docs/](docs/) and fill in your salary anchors, notice period, references, etc.
+Then create your `user_data/answer_bank.md` — same idea, copy the structure from the example in [docs/](docs/) and fill in your salary anchors, notice period, references, etc. And edit `user_data/ats_whitelist.md` to reflect the terms you can actually defend: every term in the whitelist becomes injectable per PHASE 3, everything outside it is structurally refused.
 
 ### 3. Install the server as a LaunchAgent
 
@@ -184,7 +240,7 @@ JOBFLOW ships with five archetype scaffolds. Pick the ones that match your caree
 | **Regulated SaaS** | Healthcare PM, Fintech PM, Data Governance / Compliance PM, IAM/Security |
 | **AI Founder** | AI PM, GenAI PM, EIR, Founding PM at AI-native companies |
 
-Each blueprint is **sealed**: skills never rewrite bullets at execution time. The only per-JD customization is surgical ATS keyword swaps in the Skills row. Blueprints are refined out-of-band when you notice a recurring gap.
+Each blueprint is **sealed**: skills never rewrite bullets at execution time. The only per-JD customization is surgical ATS keyword swaps in the Skills row, and those swaps are gated by [`blueprints/_ats_whitelist_template.md`](blueprints/_ats_whitelist_template.md) — your private catalog of terms you can defend in an interview. Blueprints are refined out-of-band when you notice a recurring gap.
 
 See [`blueprints/_schema.md`](blueprints/_schema.md) for the structural contract and [`blueprints/sample/blueprint_strategy_growth_sample.md`](blueprints/sample/blueprint_strategy_growth_sample.md) for a worked example.
 

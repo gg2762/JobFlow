@@ -52,7 +52,7 @@ The bounded vocabulary of ATS terms allowed for injection. Sections:
 
 **The whitelist is the contract for PHASE 3.** If a JD demands a term not in the whitelist (or in the NEVER list), it is logged as an unfulfilled gap — never silently injected. See PHASE 3 for the enforcement rule.
 
-If `ats_whitelist.md` is missing, PHASE 3 falls back to the prior heuristic ("term must be supported by the chosen blueprint's existing signals") — but the user is strongly encouraged to maintain the whitelist; it eliminates fabrication risk at the source.
+If `ats_whitelist.md` is missing, PHASE 3 falls back to the prior heuristic ("term must be supported by the chosen blueprint's existing signals") — but the user is strongly encouraged to maintain the whitelist; it eliminates fabrication risk at the source. See `./blueprints/_ats_whitelist_template.md` in the repo for a template.
 
 ---
 
