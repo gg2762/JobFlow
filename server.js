@@ -155,22 +155,22 @@ async function handleRowUpdate(req, res, id) {
   return send(res, 200, { ok: true, id, row: rows[idx] });
 }
 
-// Delete a row. For now, restricted to status='Queued' — protects rows with
-// generated artifacts (PDF/DOCX) or recorded outcomes from accidental loss.
+// Delete a row. Allowed on any status — the user explicitly wants the ability
+// to clean up any record (including Submitted/Rejected/Interview) since the
+// dashboard otherwise grows overwhelming over time. Note: generated DOCX/PDF
+// artifacts on disk are NOT touched by this — only the CSV row is removed.
 function handleRowDelete(req, res, id) {
   ensureQueue();
   const rows = parseCsv(fs.readFileSync(QUEUE_PATH, 'utf8'));
   const idx = rows.findIndex(r => r.id === id);
   if (idx === -1) return send(res, 404, { error: 'row not found', id });
-  if (rows[idx].status !== 'Queued') {
-    return send(res, 409, { error: 'only Queued rows can be deleted', id, status: rows[idx].status });
-  }
+  const removedStatus = rows[idx].status;
   rows.splice(idx, 1);
   const body = HEADERS.join(',') + '\n' + rows.map(rowToCsv).join('');
   const tmp = QUEUE_PATH + '.tmp';
   fs.writeFileSync(tmp, body);
   fs.renameSync(tmp, QUEUE_PATH);
-  console.log(`[delete] ${id}`);
+  console.log(`[delete] ${id} (was ${removedStatus})`);
   return send(res, 200, { ok: true, id });
 }
 
@@ -329,9 +329,11 @@ const DASHBOARD_HTML = `<!doctype html>
   /* PDF link */
   td .pdf-link { font-family: var(--mono); font-size: 12px; }
 
-  /* delete button (Queued rows only) */
-  .del-btn { background: transparent; border: 1px solid var(--border); color: var(--text-faint); width: 22px; height: 22px; border-radius: 4px; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; transition: background 0.1s, color 0.1s, border-color 0.1s; }
+  /* delete button — shown on every row regardless of status */
+  .del-btn { background: transparent; border: 1px solid var(--border); color: var(--text-faint); width: 26px; height: 26px; border-radius: 4px; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: background 0.1s, color 0.1s, border-color 0.1s; }
+  .del-btn svg { width: 14px; height: 14px; display: block; }
   .del-btn:hover { background: rgba(248, 113, 113, 0.15); color: var(--danger); border-color: var(--danger); }
+  .del-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* empty state */
   .empty { color: var(--text-faint); text-align: center; padding: 60px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; font-style: italic; }
@@ -580,9 +582,13 @@ function renderCell(col, r) {
     case 'pdf':       return r.pdf_path ? '<a class="pdf-link" href="file://' + encodeURI(r.pdf_path) + '">open</a>' : '<span class="muted">—</span>';
     case 'submit':    return submitCell(r);
     case 'outcome':   return outcomeCell(r);
-    case 'delete':    return r.status === 'Queued'
-      ? '<button class="del-btn" data-action="delete" data-id="' + r.id + '" title="Remove from queue">×</button>'
-      : '';
+    case 'delete':    return '<button class="del-btn" data-action="delete" data-id="' + r.id + '" title="Remove from queue">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + '<polyline points="3 6 5 6 21 6"></polyline>'
+      + '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>'
+      + '<path d="M10 11v6"></path><path d="M14 11v6"></path>'
+      + '<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>'
+      + '</svg></button>';
   }
 }
 
@@ -701,10 +707,11 @@ document.addEventListener('click', async (e) => {
     const newStatus = v === 'Pending' ? 'Submitted' : v;
     await updateRow(t.dataset.id, { status: newStatus }); return;
   }
-  if (t.dataset.action === 'delete') {
+  const delBtn = t.closest && t.closest('[data-action="delete"]');
+  if (delBtn) {
     e.stopPropagation();
-    t.disabled = true;
-    await fetch('/row/' + t.dataset.id + '/delete', { method: 'POST' });
+    delBtn.disabled = true;
+    await fetch('/row/' + delBtn.dataset.id + '/delete', { method: 'POST' });
     await load();
     return;
   }
