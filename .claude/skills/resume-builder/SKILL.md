@@ -23,9 +23,13 @@ Autonomous resume triage and programmatic optimization agent. Routes a job descr
 
 ---
 
-## Step 0 — Load user overrides
+## Step 0 — Load user overrides and ATS whitelist
 
-Before running PHASE 1, read `./user_data/skill_overrides.md` if it exists. The overrides file holds user-specific rules the open-source skill cannot ship:
+Before running PHASE 1, read two files if they exist:
+
+### 0.1 — `./user_data/skill_overrides.md`
+
+User-specific rules the open-source skill cannot ship:
 
 - Standing inclusion/exclusion rules (e.g., "always include role X", "never include role Y")
 - Personal Apply / Don't-Apply prerequisites (e.g., specific degrees the user lacks)
@@ -37,6 +41,18 @@ Before running PHASE 1, read `./user_data/skill_overrides.md` if it exists. The 
 Apply these overrides on top of the universal rules below. When overrides and universal rules conflict, **overrides win** — they are the user's explicit instructions.
 
 If the file is missing, proceed using only the universal rules. See `./blueprints/_skill_overrides_template.md` in the repo for a template.
+
+### 0.2 — `./user_data/ats_whitelist.md` (PHASE 3 enforcement)
+
+The bounded vocabulary of ATS terms allowed for injection. Sections:
+
+- **Always defensible (any blueprint)** — terms backed by signals in every blueprint
+- **Per-blueprint sections** — terms only injectable when that blueprint is the chosen one
+- **NEVER inject** — factual gaps that look tempting but the user has no real experience in
+
+**The whitelist is the contract for PHASE 3.** If a JD demands a term not in the whitelist (or in the NEVER list), it is logged as an unfulfilled gap — never silently injected. See PHASE 3 for the enforcement rule.
+
+If `ats_whitelist.md` is missing, PHASE 3 falls back to the prior heuristic ("term must be supported by the chosen blueprint's existing signals") — but the user is strongly encouraged to maintain the whitelist; it eliminates fabrication risk at the source.
 
 ---
 
@@ -136,19 +152,25 @@ Common override categories:
 
 1. Extract ALL critical ATS-screening terms from the JD: technical tooling, frameworks, domain verbs, compliance regimes, methodology nouns. No numeric cap — capture every high-signal alignment phrase.
 2. Cross-reference against the text strings staged in `resume_manifest.js` (from the chosen blueprint).
-3. Identify missing terms that are factually supported by the chosen blueprint's underlying signals (i.e., the term is consistent with the bullets already present — it's not a fabrication).
-4. Inject these keywords inline using surgical 1-to-1 swaps or comma-separated additions inside the text arrays.
+3. **Whitelist check (mandatory when `ats_whitelist.md` is present):** for each candidate term, classify it against `./user_data/ats_whitelist.md`:
+   - In **"Always defensible"** OR the section matching the chosen blueprint → **INJECT**
+   - In **"NEVER inject"** → **DO NOT INJECT** — log as unfulfilled gap
+   - Not in any section → **DO NOT INJECT** — log as unfulfilled gap
+4. Inject whitelisted terms inline using surgical 1-to-1 swaps or comma-separated additions inside the text arrays.
 
 **Hard constraints during ATS injection:**
 - ❌ Do NOT rewrite entire sentences.
 - ❌ Do NOT alter, dilute, round, or invent numerical metrics.
 - ❌ Do NOT change the professional human voice of any bullet.
-- ❌ Do NOT inject a fact that is not factually supported by the chosen blueprint's existing signals.
+- ❌ Do NOT inject any term that is not present in `./user_data/ats_whitelist.md` (when the file exists). The whitelist is the contract — JD demand is not a license to fabricate.
+- ❌ Do NOT inject a fact that is not factually supported by the chosen blueprint's existing signals (fallback rule when `ats_whitelist.md` is absent).
 - ❌ Do NOT modify the underlying `.md` blueprint file. Blueprints are sealed and only change in explicit collaborative refinement sessions.
 - ✅ Lowest-risk injection site: the **Skills row** (Product / Technical). Use it first.
-- ✅ Bullet-body injections allowed only when (a) the term replaces or augments a closely-adjacent existing term, and (b) the bullet still reads naturally and within ≤30 words.
+- ✅ Bullet-body injections allowed only when (a) the term replaces or augments a closely-adjacent existing term, (b) the bullet still reads naturally and within ≤30 words, AND (c) the term is on the whitelist.
 
-After injection, print a one-line summary of injected keywords to the terminal.
+After injection, print **two** one-line summaries to the terminal:
+1. `ATS injected: <comma-separated list>` — the terms that made it in
+2. `ATS gaps (in JD, not in whitelist): <comma-separated list>` — terms the JD demanded that you refused to inject. This is signal for the user about JD fit, not a failure.
 
 ---
 
