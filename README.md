@@ -218,6 +218,8 @@ The server auto-starts at login, auto-restarts on crash. See [docs/server.md](do
 
 Done. Click any job posting → click the extension icon → click **Queue Job**.
 
+**Tip:** open `http://localhost:3737/` once and **bookmark it** (or star it on your toolbar). The dashboard is the place you'll come back to dozens of times a week — make it one click away.
+
 ### 5. Use it
 
 - Browse to a JD page (LinkedIn, Greenhouse, Lever, Ashby, etc.) → JOBFLOW icon → **Queue Job**.
@@ -254,6 +256,8 @@ See [`blueprints/_schema.md`](blueprints/_schema.md) for the structural contract
 | `JOBFLOW_OUTPUT_DIR` | `~/Desktop/Jobs/Resume/` | Where rendered `.docx` + `.pdf` files land. |
 
 Set these in your shell profile if you want non-defaults, then reload the LaunchAgent so the server picks them up.
+
+The Chrome extension declares `host_permissions` as `http://localhost/*` (any port), so changing `JOBFLOW_PORT` only requires editing `SERVER` in `extension/popup.js` to match — no manifest changes, no `host_permissions` re-prompt from Chrome.
 
 ---
 

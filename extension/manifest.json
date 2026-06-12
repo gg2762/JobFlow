@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Capture a job description from the current tab and queue it for resume generation.",
   "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["http://localhost:3737/*"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
   "action": {
     "default_title": "Queue Job",
     "default_popup": "popup.html",
